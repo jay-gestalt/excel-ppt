@@ -1,0 +1,6 @@
+streamlit
+pandas
+numpy
+openpyxl 
+python-pptx
+python-dotenv
