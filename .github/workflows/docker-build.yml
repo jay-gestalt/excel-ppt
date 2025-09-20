@@ -37,17 +37,17 @@ jobs:
           docker push $IMAGE:latest
         # Build the Docker image, tag it as SHA-date + latest, and push both to ACR
 
-      - name: Cleanup old images in ACR (keep last 3)
-        run: |
-          IMAGE=dislex2ppt
-          # Get all tags except latest, sorted by last update descending
-          TAGS=$(az acr repository show-tags --name dislex2pptacr --repository $IMAGE --orderby time_desc --output tsv | grep -v latest)
-          COUNT=0
-          for TAG in $TAGS; do
-            COUNT=$((COUNT+1))
-            if [ $COUNT -gt 3 ]; then
-              echo "Deleting old tag: $TAG"
-              az acr repository delete --name dislex2pptacr --image $IMAGE:$TAG --yes
-            fi
-          done
+    #   - name: Cleanup old images in ACR (keep last 3)
+    #     run: |
+    #       IMAGE=dislex2ppt
+    #       # Get all tags except latest, sorted by last update descending
+    #       TAGS=$(az acr repository show-tags --name dislex2pptacr --repository $IMAGE --orderby time_desc --output tsv | grep -v latest)
+    #       COUNT=0
+    #       for TAG in $TAGS; do
+    #         COUNT=$((COUNT+1))
+    #         if [ $COUNT -gt 3 ]; then
+    #           echo "Deleting old tag: $TAG"
+    #           az acr repository delete --name dislex2pptacr --image $IMAGE:$TAG --yes
+    #         fi
+    #       done
         # Keep only the 3 most recent SHA-date images, delete older ones
