@@ -1,0 +1,53 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        # Checkout repo code
+
+      - name: Log in to ACR
+        run: |
+          docker login dislex2pptacr.azurecr.io \
+            -u ${{ secrets.ACR_USERNAME }} \
+            -p ${{ secrets.ACR_PASSWORD }}
+        # Login to Azure Container Registry using admin credentials
+
+      - name: Set IMAGE_TAG
+        run: |
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+          DATE=$(date +'%d%m%y')
+          echo "IMAGE_TAG=${SHORT_SHA}-${DATE}" >> $GITHUB_ENV
+        # Create a unique image tag combining short Git SHA + current date
+
+      - name: Build and Push Docker Image
+        run: |
+          IMAGE=dislex2pptacr.azurecr.io/dislex2ppt
+          docker build -t $IMAGE:${{ env.IMAGE_TAG }} .
+          docker tag $IMAGE:${{ env.IMAGE_TAG }} $IMAGE:latest
+          docker push $IMAGE:${{ env.IMAGE_TAG }}
+          docker push $IMAGE:latest
+        # Build the Docker image, tag it as SHA-date + latest, and push both to ACR
+
+      - name: Cleanup old images in ACR (keep last 3)
+        run: |
+          IMAGE=dislex2ppt
+          # Get all tags except latest, sorted by last update descending
+          TAGS=$(az acr repository show-tags --name dislex2pptacr --repository $IMAGE --orderby time_desc --output tsv | grep -v latest)
+          COUNT=0
+          for TAG in $TAGS; do
+            COUNT=$((COUNT+1))
+            if [ $COUNT -gt 3 ]; then
+              echo "Deleting old tag: $TAG"
+              az acr repository delete --name dislex2pptacr --image $IMAGE:$TAG --yes
+            fi
+          done
+        # Keep only the 3 most recent SHA-date images, delete older ones
